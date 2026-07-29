@@ -8,7 +8,7 @@
       "name": "agentry-for-jira",
       "source": {
         "source": "local",
-        "path": "./plugins/jira-sync"
+        "path": "./plugins/agentry-for-jira"
       },
       "policy": {
         "installation": "AVAILABLE",
