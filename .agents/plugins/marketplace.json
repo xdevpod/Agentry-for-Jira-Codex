@@ -1,7 +1,7 @@
 {
-  "name": "agentry-for-jira",
+  "name": "xdevpod",
   "interface": {
-    "displayName": "Agentry for Jira"
+    "displayName": "XDevPod"
   },
   "plugins": [
     {
