@@ -1,0 +1,20 @@
+{
+  "name": "agentry-for-jira",
+  "interface": {
+    "displayName": "Agentry for Jira"
+  },
+  "plugins": [
+    {
+      "name": "agentry-for-jira",
+      "source": {
+        "source": "local",
+        "path": "./plugins/jira-sync"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
