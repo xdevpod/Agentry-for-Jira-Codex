@@ -5,7 +5,7 @@
       "command": "node",
       "args": [
         "-e",
-        "const fs=require('fs'),os=require('os'),{join}=require('path'),{spawn}=require('child_process');const b=join(process.env.CODEX_HOME||join(os.homedir(),'.codex'),'plugins','cache','agentry-for-jira','agentry-for-jira');let v;try{v=fs.readdirSync(b,{withFileTypes:true}).filter(d=>d.isDirectory()).map(d=>d.name).sort().pop();}catch{v=null;}const l=v&&join(b,v,'bin','codex-mcp-launcher.mjs');if(!l||!fs.existsSync(l))process.exit(1);const c=spawn(process.execPath,[l],{stdio:'inherit',env:process.env});c.on('exit',code=>process.exit(code??0));c.on('error',()=>process.exit(1));"
+        "const fs=require('fs'),os=require('os'),{join}=require('path'),{spawn}=require('child_process');const b=join(process.env.CODEX_HOME||join(os.homedir(),'.codex'),'plugins','cache','xdevpod','agentry-for-jira');let v;try{v=fs.readdirSync(b,{withFileTypes:true}).filter(d=>d.isDirectory()).map(d=>d.name).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).pop();}catch{v=null;}const l=v&&join(b,v,'bin','codex-mcp-launcher.mjs');if(!l||!fs.existsSync(l))process.exit(1);const c=spawn(process.execPath,[l],{stdio:'inherit',env:process.env});c.on('exit',code=>process.exit(code??0));c.on('error',()=>process.exit(1));"
       ],
       "env": {
         "JIRA_SYNC_AGENT": "codex"

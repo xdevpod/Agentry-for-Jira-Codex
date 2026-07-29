@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"const fs=require('fs'),os=require('os'),{join}=require('path'),{spawn}=require('child_process');const b=join(process.env.CODEX_HOME||join(os.homedir(),'.codex'),'plugins','cache','agentry-for-jira','agentry-for-jira');let v;try{v=fs.readdirSync(b,{withFileTypes:true}).filter(d=>d.isDirectory()).map(d=>d.name).sort().pop();}catch{v=null;}const l=v&&join(b,v,'bin','codex-sessionstart-launcher.mjs');if(!l||!fs.existsSync(l)){process.stdout.write('{}');process.exit(0);}const c=spawn(process.execPath,[l],{stdio:'inherit',env:process.env});c.on('exit',code=>process.exit(code??0));c.on('error',()=>{process.stdout.write('{}');process.exit(0);});\"",
+            "command": "node -e \"const fs=require('fs'),os=require('os'),{join}=require('path'),{spawn}=require('child_process');const b=join(process.env.CODEX_HOME||join(os.homedir(),'.codex'),'plugins','cache','xdevpod','agentry-for-jira');let v;try{v=fs.readdirSync(b,{withFileTypes:true}).filter(d=>d.isDirectory()).map(d=>d.name).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).pop();}catch{v=null;}const l=v&&join(b,v,'bin','codex-sessionstart-launcher.mjs');if(!l||!fs.existsSync(l)){process.stdout.write('{}');process.exit(0);}const c=spawn(process.execPath,[l],{stdio:'inherit',env:process.env});c.on('exit',code=>process.exit(code??0));c.on('error',()=>{process.stdout.write('{}');process.exit(0);});\"",
             "timeout": 10
           }
         ]
