@@ -1,6 +1,6 @@
 {
   "name": "agentry-for-jira",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Sync Codex sessions, config, and terminal identity with Jira through the companion Forge app.",
   "author": {
     "name": "xdevpod",

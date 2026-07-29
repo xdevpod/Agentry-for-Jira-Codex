@@ -1,6 +1,6 @@
 ---
 name: jira-setup
-description: Set up (and rotate) the Jira session-sync OAuth token + web-trigger URL for this Codex terminal. Verifies the stored token first; if it's missing or dead, stores a fresh one from a Jira setup bundle via the clipboard, or via a file/stdin when the clipboard is unreachable (SSH, headless, sandbox). Tokens never enter the chat.
+description: Set up (and rotate) the Jira session-sync OAuth token + web-trigger URL for this Codex terminal. Reads a Jira setup bundle straight from the clipboard (elevated), stores it, then verifies the connection once. If the clipboard has no valid bundle (or is unreachable over SSH/headless/sandbox), asks before falling back to a file/stdin. Tokens never enter the chat.
 ---
 
 # Set up Jira session-sync for this Codex terminal
@@ -10,9 +10,8 @@ app-scoped token pair** (access + refresh, auto-rotating). Jira CRUD
 (create-issue / comment / JQL) is NOT part of this plugin — use the official
 Atlassian plugin.
 
-This shares the same OAuth token + `~/.agentry-for-jira/` config as Claude Code (the
-keychain slot is path-independent). If the user already configured it from
-Claude Code, this skill usually just verifies and does nothing.
+This shares the same OAuth token + `~/.agentry-for-jira/` config as Claude Code
+(the keychain slot is path-independent), so either side can (re)configure it.
 
 **The token pair is a SECRET. It must NEVER be pasted into this chat** — this
 plugin syncs the raw Codex transcript into Jira once configured, so a pasted
@@ -22,44 +21,39 @@ that reaches this transcript is `✅ Saved`.
 
 ## Flow
 
-The key rule: **verification decides whether we (re)store.** A stored token that
-fails verification is dead (revoked in Jira, or refresh-expired) and MUST be
-replaced — never just report the failure and stop.
+Direct: **read the clipboard, store the bundle, verify once.** No up-front check
+of the stored token, and no separate connection test first — `$jira-setup` just
+stores whatever valid bundle is on the clipboard, then confirms it works.
+Re-running overwrites whatever is currently stored (the verify step shows which
+account you ended up connected as, so the change is never silent).
 
-1. **Verify the current state FIRST** by calling the `jira_test_connection` MCP
-   tool (from the `agentry-for-jira` server — it hits the web-trigger `whoami`):
-   - **200 / "Authenticated"** → already configured and working. Tell the user
-     it's ready, and
-     **stop — do NOT store anything** (nothing to replace).
-   - **401 / fail / "not configured"** → either no token yet, or the stored
-     token is dead. This is initial setup OR a **rotation**: fall through to
-     step 2 to store/replace it. (Do not stop at the error.)
-
-2. **Store/replace the token from a fresh bundle** (run this for initial setup
-   OR for rotation):
-   - Tell the user — do NOT have them paste anything here — to open the
-     **"My Agent Sessions"** page in Jira, click **Generate token**, then
-     **📋 Copy setup bundle** (a FRESH one — if they revoked the old device,
-     this new one is its replacement).
-   - **You (Codex) then store the bundle YOURSELF via your shell tool — run it
-     ELEVATED (request the user's approval for an elevated run).** The user only
-     copies the bundle; do NOT ask them to run anything by hand. (This matches
-     Claude Code's `/jira-setup`, which runs the very same script automatically.)
-     **Why elevated:** Codex's default sandbox isolates the host pasteboard, so
-     a sandboxed `store-token.mjs --from-clipboard` fails with
-     `No clipboard available` even though the user DID copy the bundle —
-     elevation restores `pbpaste` (macOS) / `xclip` (Linux) access. Resolve the
-     installed plugin root (cached under a versioned dir, newest wins) and run:
-     ```sh
-     PLUGIN=$(find "${CODEX_HOME:-$HOME/.codex}/plugins/cache/agentry-for-jira/agentry-for-jira" \
-       -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1)
-     node "$PLUGIN/lib/store-token.mjs" --from-clipboard
-     ```
-     The script reads the clipboard ITSELF and writes the keychain, printing
-     only `✅ Saved` + the non-secret URL. **Never `pbpaste`/cat/echo the
-     clipboard or tokens yourself** — only `✅ Saved` should reach this
-     transcript.
-   - **If `--from-clipboard` still fails even when elevated**, the error message
+1. **Store from the clipboard (elevated)** — the user should have already copied
+   a setup bundle from Jira (open the **"My Agent Sessions"** page → **Generate
+   token** → **📋 Copy setup bundle**). **You (Codex) store the bundle YOURSELF
+   via your shell tool — run it ELEVATED (request the user's approval for an
+   elevated run).** The user only copies the bundle; do NOT ask them to run
+   anything by hand. (This matches Claude Code's `/jira-setup`, which runs the
+   very same script automatically.)
+   **Why elevated:** Codex's default sandbox isolates the host pasteboard, so a
+   sandboxed `store-token.mjs --from-clipboard` fails with `No clipboard
+   available` even though the user DID copy the bundle — elevation restores
+   `pbpaste` (macOS) / `xclip` (Linux) access. Resolve the installed plugin root
+   (cached under a versioned dir, newest wins) and run:
+   ```sh
+   PLUGIN=$(find "${CODEX_HOME:-$HOME/.codex}/plugins/cache/agentry-for-jira/agentry-for-jira" \
+     -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1)
+   node "$PLUGIN/lib/store-token.mjs" --from-clipboard
+   ```
+   The script reads the clipboard ITSELF and writes the keychain, printing only
+   `✅ Saved` + the non-secret URL. **Never `pbpaste`/cat/echo the clipboard or
+   tokens yourself** — only `✅ Saved` should reach this transcript.
+   - **`✅ Saved`** → go to step 2.
+   - **"No setup bundle on the clipboard"** → the clipboard doesn't hold a valid
+     bundle. Ask the user to click **Copy setup bundle** on the Jira "My Agent
+     Sessions" page (a FRESH one — if they revoked the old device, this new one
+     is its replacement), then re-run this step. Or, over SSH/headless where the
+     clipboard is unreachable, switch to the file path below.
+   - **`--from-clipboard` still fails even when elevated** → the error message
      names the cause: `No clipboard tool found` (install `xclip`/`xsel`) vs
      `cannot reach the display` — the latter is typical over **SSH or on a
      headless / host-split host**, where the bundle the user copied is on a
@@ -80,32 +74,32 @@ replaced — never just report the failure and stop.
         file isn't owned by this user) it prints `⚠️ Could not remove …` — tell
         the user to delete it manually, since it holds live tokens. Or pipe
         instead: `--from-stdin < /tmp/jira-bundle` (nothing touches disk).
-   - **Last resort** (no bundle file available at all): the user runs
-     `node "$PLUGIN/lib/store-token.mjs"` (interactive hidden prompts) in their
-     OWN terminal — never have them paste tokens into this chat.
-   - "No setup bundle on the clipboard" → the user hasn't clicked **Copy setup
-     bundle** yet (or copied something else). Have them click it and re-run.
 
-3. **Verify again** with `jira_test_connection`:
+2. **Verify once** with `jira_test_connection` (the `agentry-for-jira` MCP tool —
+   web-trigger `whoami`):
    - **200** → ✅ connected as `<email>` (device `<familyId>`).
    - **fail** → most often a stale clipboard bundle (have them copy a fresh one
-     and redo step 2), or the Forge app needs `forge install --upgrade` (the
+     and redo step 1), or the Forge app needs `forge install --upgrade` (the
      `token-family` entity). Diagnose and retry; don't leave the user
      unconfigured.
 
 ## Notes
 
-- Rotation is normal here: revoking a device in Jira then re-running
-  `$jira-setup` should land on step 2 and replace the keychain token. If you
-  ever find yourself reporting "token expired" without having offered to replace
-  it, you skipped step 2 — go back and run it.
+- No up-front connection test by design: `$jira-setup` stores the clipboard
+  bundle first, then verifies. The single verify at step 2 surfaces a dead or
+  stale bundle instead of silently storing one.
+- Re-running `$jira-setup` always overwrites the stored config with the clipboard
+  bundle (no pre-check, no "already working" short-circuit). The step-2 verify
+  shows the resulting account, so switching Jira site or account is visible, not
+  silent.
 - If the clipboard path is unavailable even when elevated (SSH, headless, or the
   bundle is on a different user's pasteboard — the Codex process may run as a
   different user than the desktop), use `--from-file <path>` or `--from-stdin`
-  (see step 2). The `store-token.mjs` error names the cause (`No clipboard tool
+  (step 1). The `store-token.mjs` error names the cause (`No clipboard tool
   found` vs `cannot reach the display`) and points at the same fix. The
-  interactive fallback (no flags, 5 hidden prompts) is a last resort for when no
-  bundle is available at all.
+  interactive fallback (`store-token.mjs` with no flags, 5 hidden prompts) is a
+  last resort for when no bundle is available at all — the user runs it in their
+  OWN terminal, never pasting tokens into this chat.
 - Never echo the access/refresh token. The bundle is app-scoped + per-device
   revocable from the Jira UI, but keep it out of transcripts regardless.
 - This is the Codex equivalent of Claude Code's `/jira-setup`.
