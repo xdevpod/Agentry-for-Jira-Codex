@@ -1,13 +1,13 @@
 {
   "name": "agentry-for-jira",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Sync Codex sessions, config, and terminal identity with Jira through the companion Forge app.",
   "author": {
     "name": "xdevpod",
-    "url": "https://github.com/xdevpod/Agentry-for-Jira-Codex"
+    "url": "https://github.com/xdevpod/codex-plugins"
   },
-  "homepage": "https://github.com/xdevpod/Agentry-for-Jira-Codex",
-  "repository": "https://github.com/xdevpod/Agentry-for-Jira-Codex",
+  "homepage": "https://github.com/xdevpod/codex-plugins",
+  "repository": "https://github.com/xdevpod/codex-plugins",
   "keywords": [
     "jira",
     "atlassian",
@@ -28,7 +28,7 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/xdevpod/Agentry-for-Jira-Codex",
+    "websiteURL": "https://github.com/xdevpod/codex-plugins",
     "privacyPolicyURL": "https://openai.com/policies/row-privacy-policy/",
     "termsOfServiceURL": "https://openai.com/policies/row-terms-of-use/",
     "defaultPrompt": [
